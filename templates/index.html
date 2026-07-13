@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="An AI-powered fashion recommendation system to explore and find similar clothing, shoes, and accessories.">
+    <title>FashionFit | AI Fashion Recommendation System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <div class="glass-bg"></div>
+    <div class="glass-bg-2"></div>
+
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
+                <span class="logo-text">Fashion<span class="logo-highlight">Fit</span></span>
+            </div>
+            <p class="tagline">Hyper-Personalized AI Fashion Recommendations</p>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Search Section -->
+        <section class="search-section" aria-label="Product Search">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search-input" placeholder="Search for apparel, brands, shoes, colors..."
+                    autocomplete="off">
+                <button id="search-btn" class="btn btn-primary" aria-label="Search button">
+                    <span>Search</span>
+                </button>
+            </div>
+            <div class="quick-tags">
+                <span class="quick-tag-label">Popular:</span>
+                <button class="tag-btn" data-query="Puma Tshirts">Puma Tshirts</button>
+                <button class="tag-btn" data-query="Nike Shoes">Nike Shoes</button>
+                <button class="tag-btn" data-query="Blue Jeans">Blue Jeans</button>
+                <button class="tag-btn" data-query="Summer Dress">Summer Dress</button>
+                <button class="tag-btn" data-query="Formal Shirts">Formal Shirts</button>
+            </div>
+        </section>
+
+        <!-- Dynamic Content Grid -->
+        <div class="content-layout">
+            <!-- Search Results or Catalog -->
+            <section class="results-section" id="results-panel">
+                <div class="section-header">
+                    <h2 class="section-title" id="results-title">Trending Styles</h2>
+                    <span class="results-count" id="results-count">Showing 20 items</span>
+                </div>
+
+                <div class="products-grid" id="products-grid">
+                    <!-- Products will be dynamically populated here -->
+                    <div class="shimmer-wrapper">
+                        <div class="shimmer-card"></div>
+                        <div class="shimmer-card"></div>
+                        <div class="shimmer-card"></div>
+                        <div class="shimmer-card"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sidebar: Selected Product & Recommendations -->
+            <aside class="recommendations-sidebar hidden" id="recommendations-sidebar">
+                <div class="sidebar-sticky">
+                    <button class="close-sidebar-btn" id="close-sidebar" aria-label="Close sidebar">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+
+                    <!-- Selected Product Card -->
+                    <div class="selected-product-container">
+                        <h3 class="sidebar-heading">Selected Item</h3>
+                        <div id="selected-product-details">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Similar recommendations -->
+                    <div class="recommendations-container">
+                        <h3 class="sidebar-heading"><i class="fa-solid fa-sparkles"></i> Similiar Styles</h3>
+                        <div class="recommendations-list" id="recommendations-list">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; 2026 FashionFit. Powered by TF-IDF & Cosine Similarity. Design by Senior ML Architect.</p>
+    </footer>
+
+    <!-- Custom JavaScript -->
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>
