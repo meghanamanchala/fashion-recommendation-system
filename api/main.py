@@ -43,6 +43,9 @@ def load_assets():
     # Fill any remaining NaNs in display names or strings
     df['productDisplayName'] = df['productDisplayName'].fillna('Unknown Product')
     
+    # Generate deterministic price between $14.99 and $199.99
+    df['price'] = np.round(14.99 + (df['id'] % 18) * 10.0 + (df['id'] % 5) * 1.25, 2)
+    
     # Store a dictionary mapping product ID to its index for O(1) lookups
     id_to_index = {int(row['id']): idx for idx, row in df.iterrows()}
     print(f"Loaded {len(df)} products.")
@@ -78,13 +81,53 @@ def read_root():
         return FileResponse(index_path)
     return {"message": "Welcome to the Fashion Recommendation API. templates/index.html not found."}
 
+@app.get("/api/filters")
+def get_filters():
+    """Retrieves unique genders, top brands, and price range from the dataset."""
+    if df is None:
+        raise HTTPException(status_code=500, detail="Data not loaded.")
+        
+    genders = df['gender'].dropna().unique().tolist()
+    genders = sorted([g for g in genders if isinstance(g, str)])
+    
+    # Get top 40 brands by frequency to avoid list bloating, sorted alphabetically
+    top_brands = df['brand'].dropna().value_counts().head(40).index.tolist()
+    top_brands = sorted([b for b in top_brands if isinstance(b, str)])
+    
+    min_price = float(df['price'].min())
+    max_price = float(df['price'].max())
+    
+    return {
+        "genders": genders,
+        "brands": top_brands,
+        "min_price": min_price,
+        "max_price": max_price
+    }
+
 @app.get("/api/products")
-def get_products(limit: int = 20, offset: int = 0):
-    """Retrieves a paginated list of products for the initial home feed."""
+def get_products(
+    limit: int = 20, 
+    offset: int = 0,
+    gender: str = Query(None),
+    brand: str = Query(None),
+    min_price: float = Query(None),
+    max_price: float = Query(None)
+):
+    """Retrieves a paginated list of products for the initial home feed with filters."""
     if df is None:
         raise HTTPException(status_code=500, detail="Data not loaded.")
     
-    products_slice = df.iloc[offset : offset + limit]
+    filtered_df = df
+    if gender:
+        filtered_df = filtered_df[filtered_df['gender'].str.lower() == gender.lower()]
+    if brand:
+        filtered_df = filtered_df[filtered_df['brand'].str.lower() == brand.lower()]
+    if min_price is not None:
+        filtered_df = filtered_df[filtered_df['price'] >= min_price]
+    if max_price is not None:
+        filtered_df = filtered_df[filtered_df['price'] <= max_price]
+        
+    products_slice = filtered_df.iloc[offset : offset + limit]
     return products_slice.to_dict(orient="records")
 
 @app.get("/api/product/{product_id}")
@@ -101,13 +144,36 @@ def get_product(product_id: int):
     return product
 
 @app.get("/api/search")
-def search_products(q: str = Query(..., min_length=1)):
+def search_products(
+    q: str = Query(..., min_length=1),
+    gender: str = Query(None),
+    brand: str = Query(None),
+    min_price: float = Query(None),
+    max_price: float = Query(None)
+):
     """
-    Searches products using TF-IDF cosine similarity.
+    Searches products using TF-IDF cosine similarity with optional filters.
     Projects the text query into the product embedding space.
     """
     if df is None or vectorizer is None or tfidf_matrix is None:
         raise HTTPException(status_code=500, detail="Search engine or data not loaded.")
+        
+    # Apply filters to get a boolean mask
+    mask = pd.Series(True, index=df.index)
+    if gender:
+        mask = mask & (df['gender'].str.lower() == gender.lower())
+    if brand:
+        mask = mask & (df['brand'].str.lower() == brand.lower())
+    if min_price is not None:
+        mask = mask & (df['price'] >= min_price)
+    if max_price is not None:
+        mask = mask & (df['price'] <= max_price)
+        
+    # Filtered indices
+    matching_indices = df[mask].index.tolist()
+    
+    if not matching_indices:
+        return []
         
     # Transform query to TF-IDF vector
     query_vec = vectorizer.transform([q.lower()])
@@ -115,18 +181,29 @@ def search_products(q: str = Query(..., min_length=1)):
     # Calculate similarity between query and all items
     similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
     
-    # Get top 30 matching products
-    top_indices = np.argsort(similarities)[-30:][::-1]
+    # Get similarities for only filtered indices
+    filtered_similarities = similarities[matching_indices]
+    
+    # Sort matching indices based on similarity score (descending)
+    sorted_local_indices = np.argsort(filtered_similarities)[::-1]
+    
+    # Get top 30
+    top_local_indices = sorted_local_indices[:30]
+    top_global_indices = [matching_indices[idx] for idx in top_local_indices]
     
     # Filter out items that have 0 similarity to avoid noise
-    valid_indices = [idx for idx in top_indices if similarities[idx] > 0.0]
+    valid_indices = [idx for idx in top_global_indices if similarities[idx] > 0.0]
     
-    # If no results from TF-IDF (e.g. out of vocabulary words), fall back to simple substring matching
+    # If no results from TF-IDF (e.g. out of vocabulary words), fall back to simple substring matching on filtered df
     if len(valid_indices) == 0:
-        matches = df[df['productDisplayName'].str.contains(q, case=False, na=False) | 
-                     df['articleType'].str.contains(q, case=False, na=False) |
-                     df['brand'].str.contains(q, case=False, na=False)]
-        results = matches.head(30).to_dict(orient="records")
+        filtered_df = df[mask]
+        matches = filtered_df[filtered_df['productDisplayName'].str.contains(q, case=False, na=False) | 
+                              filtered_df['articleType'].str.contains(q, case=False, na=False) |
+                              filtered_df['brand'].str.contains(q, case=False, na=False)]
+        results = matches.head(30).copy()
+        # Compute similarity score anyway if TF-IDF is available
+        results['score'] = [float(similarities[id_to_index[pid]]) for pid in results['id']]
+        results = results.to_dict(orient="records")
     else:
         results = df.iloc[valid_indices].copy()
         # Add similarity score to output
@@ -138,7 +215,7 @@ def search_products(q: str = Query(..., min_length=1)):
 @app.get("/api/recommend/{product_id}")
 def recommend_products(product_id: int):
     """
-    Serves the precomputed top 10 recommended items for a product ID.
+    Serves the precomputed top 10 recommended items for a product ID, with dynamic similarity scores.
     """
     if df is None or top_recommendations is None:
         raise HTTPException(status_code=500, detail="Recommendation engine or data not loaded.")
@@ -150,6 +227,16 @@ def recommend_products(product_id: int):
     rec_indices = top_recommendations[idx]
     
     recs = df.iloc[rec_indices].copy()
+    
+    # Calculate similarity scores dynamically for the recommended items
+    if tfidf_matrix is not None:
+        target_vector = tfidf_matrix[idx]
+        rec_vectors = tfidf_matrix[rec_indices]
+        sims = cosine_similarity(target_vector, rec_vectors).flatten()
+        recs['score'] = sims
+    else:
+        recs['score'] = 0.0
+        
     return recs.to_dict(orient="records")
 
 if __name__ == "__main__":
