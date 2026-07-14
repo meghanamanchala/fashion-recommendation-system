@@ -57,6 +57,49 @@
             </div>
         </section>
 
+        <!-- Filter Section -->
+        <section class="filter-section" id="filter-panel" aria-label="Product Filters">
+            <div class="filter-container">
+                <!-- Gender Filter -->
+                <div class="filter-group gender-filter-group">
+                    <span class="filter-label">Gender</span>
+                    <div class="gender-pills" id="gender-pills">
+                        <button class="gender-pill active" data-gender="">All</button>
+                        <button class="gender-pill" data-gender="men">Men</button>
+                        <button class="gender-pill" data-gender="women">Women</button>
+                        <button class="gender-pill" data-gender="boys">Boys</button>
+                        <button class="gender-pill" data-gender="girls">Girls</button>
+                        <button class="gender-pill" data-gender="unisex">Unisex</button>
+                    </div>
+                </div>
+
+                <!-- Brand Filter -->
+                <div class="filter-group brand-filter-group">
+                    <label for="brand-select" class="filter-label">Brand</label>
+                    <div class="select-wrapper">
+                        <select id="brand-select" class="filter-select">
+                            <option value="">All Brands</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down select-arrow"></i>
+                    </div>
+                </div>
+
+                <!-- Price Filter -->
+                <div class="filter-group price-filter-group">
+                    <span class="filter-label">Price Under</span>
+                    <div class="price-slider-container">
+                        <input type="range" id="price-slider" min="15" max="200" value="200" class="price-slider">
+                        <span id="price-slider-val" class="price-val">$200</span>
+                    </div>
+                </div>
+
+                <!-- Reset Button -->
+                <button id="reset-filters-btn" class="btn btn-secondary reset-btn" aria-label="Reset filters">
+                    <i class="fa-solid fa-rotate-left"></i> <span>Reset</span>
+                </button>
+            </div>
+        </section>
+
         <!-- Dynamic Content Grid -->
         <div class="content-layout">
             <!-- Search Results or Catalog -->
@@ -102,6 +145,21 @@
                 </div>
             </aside>
         </div>
+
+        <!-- Recently Viewed Section -->
+        <section class="history-section hidden" id="history-section">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> Browsing History</h2>
+                <button id="clear-history-btn" class="btn btn-text clear-history-btn" aria-label="Clear browsing history">
+                    <i class="fa-solid fa-trash-can"></i> Clear History
+                </button>
+            </div>
+            <div class="history-carousel-wrapper">
+                <div class="history-grid" id="history-grid">
+                    <!-- Dynamic history cards -->
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer class="app-footer">
