@@ -1,6 +1,7 @@
 # Data & Models
-data/cleaned_styles.csv
-models/
+data/styles.csv
+data/images/
+data/myntradataset/
 
 # Python environment
 venv/
